@@ -9,13 +9,13 @@ namespace GameRes.Compression
     {
         private const int BUFFER_SIZE = 4096;
 
-        [DllImport("zstd.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("zstd-1.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr ZSTD_createDStream();
 
-        [DllImport("zstd.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("zstd-1.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int ZSTD_decompressStream(IntPtr zds, ref ZSTD_outBuffer output, ref ZSTD_inBuffer input);
 
-        [DllImport("zstd.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("zstd-1.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern int ZSTD_freeDStream(IntPtr zds);
 
         [StructLayout(LayoutKind.Sequential)]

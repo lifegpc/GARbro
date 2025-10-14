@@ -30,6 +30,8 @@ using GARbro.GUI.Properties;
 using GameRes;
 using GameRes.Compression;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Windows;
 
 namespace GARbro.GUI
 {
@@ -46,8 +48,13 @@ namespace GARbro.GUI
         /// </summary>
         public string InitPath { get; private set; }
 
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        static extern bool SetDllDirectory(string lpPathName);
+
         void ApplicationStartup (object sender, StartupEventArgs e)
         {
+            SetupDllDirectory();
             string exe_dir = Path.GetDirectoryName (System.Reflection.Assembly.GetExecutingAssembly().Location);
 #if DEBUG
             Trace.Listeners.Add (new TextWriterTraceListener (Path.Combine (exe_dir, "trace.log")));
@@ -158,6 +165,21 @@ namespace GARbro.GUI
                 Trace.WriteLine ("Link navigation failed: "+X.Message, uri.ToString());
             }
             return false;
+        }
+
+        private static void SetupDllDirectory() {
+            string arch = Environment.Is64BitProcess ? "x64" : "x86";
+            string appPath = AppDomain.CurrentDomain.BaseDirectory;
+            string dllPath = Path.Combine(appPath, arch);
+
+            if (Directory.Exists(dllPath)) {
+                Console.WriteLine($"Setting DLL search directory to: {dllPath}");
+                if (!SetDllDirectory(dllPath)) {
+                    Console.WriteLine("Warning: Failed to set DLL directory.");
+                }
+            } else {
+                Console.WriteLine($"Warning: Directory not found: {dllPath}");
+            }
         }
     }
 }
