@@ -248,11 +248,22 @@ namespace GameRes.Formats.Circus
                 }
             }
 
+            private Stream GetDecompressStream() {
+                long pos = m_input.Position;
+                uint header = m_input.ReadUInt32();
+                m_input.Position = pos;
+                if (header == 0xFD2FB528) {
+                    var zstd = ZstdReader.Unpack(m_input.AsStream);
+                    return new MemoryStream(zstd);
+                } else
+                    return new ZLibStream(m_input.AsStream, CompressionMode.Decompress);
+            }
+
             private void UnpackV2 ()
             {
                 int pixel_size = m_bpp / 8;
                 int src_stride = m_width * pixel_size;
-                using (var zlib = new ZLibStream (m_input.AsStream, CompressionMode.Decompress, true))
+                using (var zlib = GetDecompressStream())
                 using (var src = new BinaryReader (zlib))
                 {
                     if (m_bpp >= 24)
