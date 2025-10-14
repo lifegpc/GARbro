@@ -123,10 +123,6 @@ namespace GameRes.Formats
 
         public override ImageMetaData ReadMetaData (IBinaryStream file)
         {
-            var header = file.ReadHeader (2);
-            if (header[0] != 0xFF || header[1] != 0x0A)
-                return null;
-
             IntPtr dec = JxlDecoderCreate(IntPtr.Zero);
             if (dec == IntPtr.Zero)
                 return null;
