@@ -160,6 +160,8 @@
     <Compile Include="Software House Parsley\ArcCG3.cs" />
     <Compile Include="Software House Parsley\ArcScn.cs" />
     <Compile Include="TechGian\ArcBIN.cs" />
+    <Compile Include="UnArr.cs" />
+    <Compile Include="UnArrArchive.cs" />
     <Compile Include="Unity\ScriptDSM.cs" />
     <Compile Include="Xuse\ArcNT.cs" />
     <Compile Include="Xuse\ArcWVB.cs" />
@@ -1272,10 +1274,16 @@
     <Content Include="x64\jxl_dec.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="x64\unarr.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="x64\zstd-1.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="x86\jxl_dec.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x86\unarr.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="x86\zstd-1.dll">
