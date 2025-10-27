@@ -186,8 +186,8 @@
   </PropertyGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName)
-exit 0</PreBuildEvent>
+    <!--<PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName)
+exit 0</PreBuildEvent>-->
   </PropertyGroup>
   <PropertyGroup Label="YltProperties">
     <YltTools>$(SolutionDir)packages\YaccLexTools.0.2.2\tools\</YltTools>
