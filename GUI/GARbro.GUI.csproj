@@ -337,8 +337,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName) "$(SolutionDir)\"
-exit 0</PreBuildEvent>
+    <!--<PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName) "$(SolutionDir)\"
+exit 0</PreBuildEvent>-->
   </PropertyGroup>
   <PropertyGroup>
     <PostBuildEvent>

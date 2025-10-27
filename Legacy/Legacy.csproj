@@ -298,7 +298,7 @@
     <Compile Include="Mink\ImageGDF.cs" />
     <Compile Include="Mutation\ImageRBM.cs" />
     <Compile Include="Nabe\ImageYPF.cs" />
-    <Compile Include="Nanami\ArcBMM.cs" />
+    <!--<Compile Include="Nanami\ArcBMM.cs" />-->
     <Compile Include="Nekotaro\ArcNSC.cs" />
     <Compile Include="Nekotaro\ImageGCmp.cs" />
     <Compile Include="PlanTech\ArcPAC.cs" />
@@ -351,8 +351,8 @@
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName)
-exit 0</PreBuildEvent>
+    <!--<PreBuildEvent>perl "$(SolutionDir)inc-revision.pl" "$(ProjectPath)" $(ConfigurationName)
+exit 0</PreBuildEvent>-->
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
