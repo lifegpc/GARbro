@@ -111,6 +111,7 @@
     <Compile Include="FC01\ArcBDT.cs" />
     <Compile Include="FC01\BdtTables.cs" />
     <Compile Include="GScripter\ArcDATA.cs" />
+    <Compile Include="ImageAVIF.cs" />
     <Compile Include="ImageJXL.cs" />
     <Compile Include="Ism\ImagePNG.cs" />
     <Compile Include="Kogado\ArcARC.cs" />
@@ -1271,6 +1272,9 @@
     <EmbeddedResource Include="Strings\arcStrings.ru-RU.resx" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="x64\avif.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="x64\jxl_dec.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -1278,6 +1282,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="x64\zstd-1.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x86\avif.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="x86\jxl_dec.dll">
