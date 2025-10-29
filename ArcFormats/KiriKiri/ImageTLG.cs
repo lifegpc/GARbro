@@ -84,7 +84,7 @@ namespace GameRes.Formats.KiriKiri
             }
             else
             {
-                if (4 != colors && 3 != colors)
+                if (4 != colors && 3 != colors && colors != 1)
                     return null;
                 offset += 12;
             }
@@ -380,6 +380,14 @@ namespace GameRes.Formats.KiriKiri
                     prevline_index = curline;
                 }
             }
+            if (1 == colors)
+            {
+                for (int i = 0; i < image_bits.Length; ++i)
+                {
+                    uint gray = image_bits[i] & 0xFF;
+                    image_bits[i] = 0xFF000000u | (gray << 16) | (gray << 8) | gray;
+                }
+            }
             int stride = width * 4;
             var pixels = new byte[height * stride];
             Buffer.BlockCopy (image_bits, 0, pixels, 0, pixels.Length);
@@ -445,6 +453,10 @@ namespace GameRes.Formats.KiriKiri
                         // not first line
                         switch(colors)
                         {
+                        case 1:
+                            TVPTLG5ComposeColors1To4 (image_bits, current, prevline,
+                                                        outbuf, outbuf_pos, width);
+                            break;
                         case 3:
                             TVPTLG5ComposeColors3To4 (image_bits, current, prevline,
                                                         outbuf, outbuf_pos, width);
@@ -460,6 +472,17 @@ namespace GameRes.Formats.KiriKiri
                         // first line
                         switch(colors)
                         {
+                        case 1:
+                            for (int pv = 0, x = 0; x < width; x++)
+                            {
+                                int v = outbuf[0][outbuf_pos+x];
+                                byte gray = (byte)(pv += v);
+                                image_bits[current++] = gray;
+                                image_bits[current++] = gray;
+                                image_bits[current++] = gray;
+                                image_bits[current++] = 0xff;
+                            }
+                            break;
                         case 3:
                             for (int pr = 0, pg = 0, pb = 0, x = 0;
                                     x < width; x++)
@@ -496,6 +519,22 @@ namespace GameRes.Formats.KiriKiri
                 }
             }
             return image_bits;
+        }
+
+        void TVPTLG5ComposeColors1To4 (byte[] outp, int outp_index, int upper,
+                                       byte[][] buf, int bufpos, int width)
+        {
+            byte pc0 = 0;
+            for (int x = 0; x < width; x++)
+            {
+                byte c0 = buf[0][bufpos+x];
+                byte gray = (byte)(((pc0 += c0) + outp[upper]) & 0xff);
+                outp[outp_index++] = gray;
+                outp[outp_index++] = gray;
+                outp[outp_index++] = gray;
+                outp[outp_index++] = 0xff;
+                upper += 4;
+            }
         }
 
         void TVPTLG5ComposeColors3To4 (byte[] outp, int outp_index, int upper,
