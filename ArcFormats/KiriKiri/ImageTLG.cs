@@ -12,6 +12,7 @@ using System;
 using System.IO;
 using System.ComponentModel.Composition;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using GameRes.Utility;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,6 +32,8 @@ namespace GameRes.Formats.KiriKiri
         public override string Tag { get { return "TLG"; } }
         public override string Description { get { return "KiriKiri game engine image format"; } }
         public override uint Signature { get { return 0x30474c54; } } // "TLG0"
+
+        public override bool CanWrite { get { return true; } }
 
         public TlgFormat ()
         {
@@ -129,7 +132,159 @@ namespace GameRes.Formats.KiriKiri
 
         public override void Write (Stream file, ImageData image)
         {
-            throw new NotImplementedException ("TlgFormat.Write not implemented");
+            if (null == image)
+                throw new ArgumentNullException ("image");
+
+            BitmapSource source = image.Bitmap;
+            int colors;
+
+            if (source.Format == PixelFormats.Gray8)
+            {
+                colors = 1;
+            }
+            else if (source.Format == PixelFormats.Bgr24)
+            {
+                colors = 3;
+            }
+            else if (source.Format == PixelFormats.Gray16)
+            {
+                var converted = new FormatConvertedBitmap (source, PixelFormats.Gray8, null, 0);
+                converted.Freeze ();
+                source = converted;
+                colors = 1;
+            }
+            else
+            {
+                if (source.Format != PixelFormats.Bgra32)
+                {
+                    var converted = new FormatConvertedBitmap (source, PixelFormats.Bgra32, null, 0);
+                    converted.Freeze ();
+                    source = converted;
+                }
+                colors = 4;
+            }
+
+            int width = source.PixelWidth;
+            int height = source.PixelHeight;
+            if (width <= 0 || height <= 0)
+                throw new ArgumentException ("Image dimensions must be positive.", "image");
+
+            int stride = width * colors;
+            byte[] pixels = new byte[stride * height];
+            source.CopyPixels (pixels, stride, 0);
+
+            using (var writer = new BinaryWriter (file, Encoding.ASCII, true))
+            {
+                writer.Write (Encoding.ASCII.GetBytes ("TLG5.0\0raw\x1a"));
+                writer.Write ((byte)colors);
+                writer.Write ((uint)width);
+                writer.Write ((uint)height);
+                writer.Write ((uint)TVP_TLG5_BLOCK_HEIGHT);
+
+                int blockcount = (height + TVP_TLG5_BLOCK_HEIGHT - 1) / TVP_TLG5_BLOCK_HEIGHT;
+                long blockSizePos = writer.BaseStream.Position;
+                for (int i = 0; i < blockcount; ++i)
+                    writer.Write (0u);
+
+                var compressor = new Tlg5SlideCompressor ();
+                var blocksizes = new int[blockcount];
+                var cmpinbuf = new byte[colors][];
+                int blockBufferSize = TVP_TLG5_BLOCK_HEIGHT * width;
+                for (int c = 0; c < colors; ++c)
+                    cmpinbuf[c] = new byte[blockBufferSize];
+
+                var output = new List<byte> (blockBufferSize);
+                int[] prevcl = new int[4];
+                int[] val = new int[4];
+
+                int blockIndex = 0;
+                for (int blkY = 0; blkY < height; blkY += TVP_TLG5_BLOCK_HEIGHT)
+                {
+                    int ylim = Math.Min (blkY + TVP_TLG5_BLOCK_HEIGHT, height);
+                    int inp = 0;
+
+                    for (int y = blkY; y < ylim; ++y)
+                    {
+                        for (int i = 0; i < 4; ++i)
+                            prevcl[i] = 0;
+                        int currentPos = y * stride;
+                        int upperPos = y > 0 ? (y - 1) * stride : 0;
+                        for (int x = 0; x < width; ++x)
+                        {
+                            for (int c = 0; c < colors; ++c)
+                            {
+                                int currentValue = pixels[currentPos++];
+                                int cl;
+                                if (y != 0)
+                                {
+                                    int upperValue = pixels[upperPos++];
+                                    cl = (currentValue - upperValue) & 0xFF;
+                                }
+                                else
+                                {
+                                    cl = currentValue;
+                                }
+                                int delta = (cl - prevcl[c]) & 0xFF;
+                                val[c] = delta;
+                                prevcl[c] = cl;
+                            }
+
+                            if (colors == 1)
+                            {
+                                cmpinbuf[0][inp] = (byte)val[0];
+                            }
+                            else if (colors == 3)
+                            {
+                                cmpinbuf[0][inp] = (byte)((val[0] - val[1]) & 0xFF);
+                                cmpinbuf[1][inp] = (byte)val[1];
+                                cmpinbuf[2][inp] = (byte)((val[2] - val[1]) & 0xFF);
+                            }
+                            else
+                            {
+                                cmpinbuf[0][inp] = (byte)((val[0] - val[1]) & 0xFF);
+                                cmpinbuf[1][inp] = (byte)val[1];
+                                cmpinbuf[2][inp] = (byte)((val[2] - val[1]) & 0xFF);
+                                cmpinbuf[3][inp] = (byte)val[3];
+                            }
+                            ++inp;
+                        }
+                    }
+
+                    int blocksize = 0;
+                    for (int c = 0; c < colors; ++c)
+                    {
+                        compressor.Store ();
+                        output.Clear ();
+                        if (output.Capacity < inp)
+                            output.Capacity = inp;
+                        int compressedSize = compressor.EncodeInto (cmpinbuf[c], inp, output);
+                        if (compressedSize < inp)
+                        {
+                            var compressed = output.ToArray ();
+                            writer.Write ((byte)0);
+                            writer.Write ((uint)compressedSize);
+                            writer.Write (compressed);
+                            blocksize += compressed.Length + 5;
+                        }
+                        else
+                        {
+                            compressor.Restore ();
+                            writer.Write ((byte)1);
+                            writer.Write ((uint)inp);
+                            writer.Write (cmpinbuf[c], 0, inp);
+                            blocksize += inp + 5;
+                        }
+                    }
+                    blocksizes[blockIndex++] = blocksize;
+                }
+
+                long endPos = writer.BaseStream.Position;
+                writer.BaseStream.Position = blockSizePos;
+                for (int i = 0; i < blockcount; ++i)
+                    writer.Write ((uint)blocksizes[i]);
+                writer.BaseStream.Position = endPos;
+                writer.Flush ();
+            }
         }
 
         byte[] ReadTlg (IBinaryStream src, TlgMetaData info)
@@ -231,6 +386,7 @@ namespace GameRes.Formats.KiriKiri
             return base_image;
         }
 
+        const int TVP_TLG5_BLOCK_HEIGHT = 4;
         const int TVP_TLG6_H_BLOCK_SIZE = 8;
         const int TVP_TLG6_W_BLOCK_SIZE = 8;
 
@@ -1123,6 +1279,273 @@ namespace GameRes.Formats.KiriKiri
                     zero = !zero;
                 }
             }
+        }
+    }
+
+    internal sealed class Tlg5SlideCompressor
+    {
+        struct Chain
+        {
+            public int Prev;
+            public int Next;
+
+            public Chain (int prev, int next)
+            {
+                Prev = prev;
+                Next = next;
+            }
+        }
+
+        const int SlideN = 4096;
+        const int SlideM = 18 + 255;
+        const int TextSize = SlideN + SlideM;
+        const int MapSize = 256 * 256;
+
+        readonly byte[] m_text = new byte[TextSize];
+        readonly int[] m_map = new int[MapSize];
+        readonly Chain[] m_chains = new Chain[SlideN];
+        readonly byte[] m_textBackup = new byte[TextSize];
+        readonly int[] m_mapBackup = new int[MapSize];
+        readonly Chain[] m_chainsBackup = new Chain[SlideN];
+        int m_s;
+        int m_sBackup;
+
+        public Tlg5SlideCompressor ()
+        {
+            for (int i = 0; i < m_map.Length; ++i)
+                m_map[i] = -1;
+            for (int i = 0; i < m_chains.Length; ++i)
+            {
+                m_chains[i] = new Chain (-1, -1);
+                m_chainsBackup[i] = new Chain (-1, -1);
+            }
+            for (int i = SlideN - 1; i >= 0; --i)
+                AddMap (i);
+        }
+
+        void AddMap (int p)
+        {
+            int place = m_text[p] + (m_text[(p + 1) & (SlideN - 1)] << 8);
+            if (-1 == m_map[place])
+            {
+                m_map[place] = p;
+                var chain = m_chains[p];
+                chain.Prev = -1;
+                chain.Next = -1;
+                m_chains[p] = chain;
+            }
+            else
+            {
+                int old = m_map[place];
+                m_map[place] = p;
+
+                var oldChain = m_chains[old];
+                oldChain.Prev = p;
+                m_chains[old] = oldChain;
+
+                var chain = m_chains[p];
+                chain.Next = old;
+                chain.Prev = -1;
+                m_chains[p] = chain;
+            }
+        }
+
+        void DeleteMap (int p)
+        {
+            var chain = m_chains[p];
+            int next = chain.Next;
+            if (next != -1)
+            {
+                var nextChain = m_chains[next];
+                nextChain.Prev = chain.Prev;
+                m_chains[next] = nextChain;
+            }
+            int prev = chain.Prev;
+            if (prev != -1)
+            {
+                var prevChain = m_chains[prev];
+                prevChain.Next = chain.Next;
+                m_chains[prev] = prevChain;
+            }
+            else
+            {
+                int place = m_text[p] + (m_text[(p + 1) & (SlideN - 1)] << 8);
+                m_map[place] = next;
+            }
+            chain.Prev = -1;
+            chain.Next = -1;
+            m_chains[p] = chain;
+        }
+
+        void GetMatch (byte[] input, int offset, int count, int s, out int length, out int position)
+        {
+            length = 0;
+            position = 0;
+            if (count < 3 || offset + count > input.Length)
+            {
+                if (offset + count > input.Length)
+                    count = input.Length - offset;
+                if (count < 3)
+                    return;
+            }
+
+            int curlen = count - 1;
+            int place = input[offset] | (input[offset + 1] << 8);
+            int head = m_map[place];
+            if (head == -1)
+                return;
+
+            int bestLen = 0;
+            int bestPos = 0;
+            while (head != -1)
+            {
+                int placeOrg = head;
+                if (s == placeOrg || s == ((placeOrg + 1) & (SlideN - 1)))
+                {
+                    head = m_chains[placeOrg].Next;
+                    continue;
+                }
+                int p = placeOrg + 2;
+                int limit = placeOrg + ((SlideM < curlen) ? SlideM : curlen);
+                if (limit > TextSize)
+                    limit = TextSize;
+                if (limit >= SlideN)
+                {
+                    if (placeOrg <= s && s < SlideN)
+                        limit = s;
+                    else if (s < (limit & (SlideN - 1)))
+                        limit = s + SlideN;
+                }
+                else
+                {
+                    if (placeOrg <= s && s < limit)
+                        limit = s;
+                }
+                if (limit > TextSize)
+                    limit = TextSize;
+                int cIndex = 2;
+                while (p < limit && cIndex < count && m_text[p] == input[offset + cIndex])
+                {
+                    ++p;
+                    ++cIndex;
+                }
+                int matchLen = p - placeOrg;
+                if (matchLen > bestLen)
+                {
+                    bestLen = matchLen;
+                    bestPos = placeOrg;
+                    if (matchLen == SlideM)
+                        break;
+                }
+                head = m_chains[placeOrg].Next;
+            }
+            length = bestLen;
+            position = bestPos;
+        }
+
+        public int EncodeInto (byte[] input, int length, List<byte> output)
+        {
+            if (null == input)
+                throw new ArgumentNullException ("input");
+            if (null == output)
+                throw new ArgumentNullException ("output");
+            if (length <= 0)
+                return 0;
+
+            byte[] code = new byte[40];
+            int codeptr = 1;
+            byte mask = 1;
+            code[0] = 0;
+            int idx = 0;
+            int remain = length;
+            int s = m_s;
+
+            while (remain > 0)
+            {
+                int len, pos;
+                GetMatch (input, idx, remain, s, out len, out pos);
+                if (len >= 3)
+                {
+                    code[0] |= mask;
+                    if (len >= 18)
+                    {
+                        code[codeptr++] = (byte)(pos & 0xFF);
+                        code[codeptr++] = (byte)(((pos & 0xF00) >> 8) | 0xF0);
+                        code[codeptr++] = (byte)(len - 18);
+                    }
+                    else
+                    {
+                        code[codeptr++] = (byte)(pos & 0xFF);
+                        code[codeptr++] = (byte)(((pos & 0xF00) >> 8) | ((len - 3) << 4));
+                    }
+                    for (int l = 0; l < len; ++l)
+                    {
+                        byte c = input[idx++];
+                        --remain;
+                        int sPrev = (s - 1) & (SlideN - 1);
+                        DeleteMap (sPrev);
+                        DeleteMap (s);
+                        if (s < SlideM - 1)
+                            m_text[s + SlideN] = c;
+                        m_text[s] = c;
+                        AddMap (sPrev);
+                        AddMap (s);
+                        s = (s + 1) & (SlideN - 1);
+                    }
+                }
+                else
+                {
+                    byte c = input[idx++];
+                    --remain;
+                    int sPrev = (s - 1) & (SlideN - 1);
+                    DeleteMap (sPrev);
+                    DeleteMap (s);
+                    if (s < SlideM - 1)
+                        m_text[s + SlideN] = c;
+                    m_text[s] = c;
+                    AddMap (sPrev);
+                    AddMap (s);
+                    s = (s + 1) & (SlideN - 1);
+                    code[codeptr++] = c;
+                }
+
+                mask <<= 1;
+                if (0 == mask)
+                {
+                    FlushCode (output, code, codeptr);
+                    mask = 1;
+                    codeptr = 1;
+                    code[0] = 0;
+                }
+            }
+
+            if (mask != 1)
+                FlushCode (output, code, codeptr);
+
+            m_s = s;
+            return output.Count;
+        }
+
+        public void Store ()
+        {
+            m_sBackup = m_s;
+            Buffer.BlockCopy (m_text, 0, m_textBackup, 0, m_text.Length);
+            Array.Copy (m_map, m_mapBackup, m_map.Length);
+            Array.Copy (m_chains, m_chainsBackup, m_chains.Length);
+        }
+
+        public void Restore ()
+        {
+            m_s = m_sBackup;
+            Buffer.BlockCopy (m_textBackup, 0, m_text, 0, m_text.Length);
+            Array.Copy (m_mapBackup, m_map, m_map.Length);
+            Array.Copy (m_chainsBackup, m_chains, m_chains.Length);
+        }
+
+        static void FlushCode (List<byte> output, byte[] code, int length)
+        {
+            for (int i = 0; i < length; ++i)
+                output.Add (code[i]);
         }
     }
 

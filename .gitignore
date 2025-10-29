@@ -17,3 +17,4 @@ packages
 Experimental
 .nuget
 .vs
+tmp/
