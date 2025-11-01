@@ -537,6 +537,9 @@
     <Compile Include="Morning\ArcTTD.cs" />
     <Compile Include="Musica\ArcPAZ.cs" />
     <Compile Include="Musica\ArcSQZ.cs" />
+    <Compile Include="Musica\CreatePAZWidget.xaml.cs">
+      <DependentUpon>CreatePAZWidget.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Musica\WidgetPAZ.xaml.cs">
       <DependentUpon>WidgetPAZ.xaml</DependentUpon>
     </Compile>
@@ -1135,6 +1138,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="MangaGamer\WidgetMGPK.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Musica\CreatePAZWidget.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

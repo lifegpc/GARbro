@@ -645,6 +645,42 @@ namespace GameRes.Formats.Properties {
                 this["PAZTitle"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string PAZArchiveKey {
+            get {
+                return ((string)(this["PAZArchiveKey"]));
+            }
+            set {
+                this["PAZArchiveKey"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool PAZCompressContents {
+            get {
+                return ((bool)(this["PAZCompressContents"]));
+            }
+            set {
+                this["PAZCompressContents"] = value;
+            }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool PAZRetainStructure {
+            get {
+                return ((bool)(this["PAZRetainStructure"]));
+            }
+            set {
+                this["PAZRetainStructure"] = value;
+            }
+        }
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]

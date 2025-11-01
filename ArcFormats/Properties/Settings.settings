@@ -158,6 +158,15 @@
     <Setting Name="PAZTitle" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>
+    <Setting Name="PAZArchiveKey" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="PAZCompressContents" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="PAZRetainStructure" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
     <Setting Name="EAGLSEncryption" Type="System.String" Scope="User">
       <Value Profile="(Default)" />
     </Setting>

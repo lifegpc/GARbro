@@ -1,0 +1,26 @@
+<Grid x:Class="GameRes.Formats.GUI.CreatePAZWidget"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:p="clr-namespace:GameRes.Formats.Properties">
+    <Grid.RowDefinitions>
+        <RowDefinition/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0,0,0,5">
+        <StackPanel Orientation="Vertical" Margin="0,0,10,0">
+            <Label Content="Title" Target="{Binding ElementName=Title}" Padding="4,0,0,5"/>
+            <ComboBox Name="Title" Width="200"
+                      SelectedValue="{Binding Source={x:Static p:Settings.Default}, Path=PAZTitle, Mode=TwoWay}"/>
+        </StackPanel>
+        <StackPanel Orientation="Vertical">
+            <Label Content="Archive key" Target="{Binding ElementName=Archive}" Padding="4,0,0,5"/>
+            <ComboBox Name="Archive" Width="180"
+                      SelectedValue="{Binding Source={x:Static p:Settings.Default}, Path=PAZArchiveKey, Mode=TwoWay}"/>
+        </StackPanel>
+    </StackPanel>
+    <CheckBox Grid.Row="1" Name="Compress" Content="Compress contents" Margin="0,0,0,5"
+              IsChecked="{Binding Source={x:Static p:Settings.Default}, Path=PAZCompressContents, Mode=TwoWay}"/>
+    <CheckBox Grid.Row="2" Name="Retain" Content="Retain folder structure"
+              IsChecked="{Binding Source={x:Static p:Settings.Default}, Path=PAZRetainStructure, Mode=TwoWay}"/>
+</Grid>
